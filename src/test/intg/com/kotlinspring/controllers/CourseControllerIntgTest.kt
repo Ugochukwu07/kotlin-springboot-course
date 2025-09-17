@@ -1,6 +1,7 @@
 package com.kotlinspring.controllers
 
 import com.kotlinspring.dto.CourseDTO
+import com.kotlinspring.entity.Course
 import com.kotlinspring.repository.CourseRepository
 import com.kotlinspring.util.courseEntityList
 import org.junit.jupiter.api.Assertions
@@ -62,5 +63,53 @@ class CourseControllerIntgTest {
 
         println("Courses: $courseDTOs")
         Assertions.assertEquals(3, courseDTOs!!.size)
+    }
+
+    @Test
+    fun updateCourse() {
+        //existing course
+        val course = Course(
+            id = null,
+            name = "Java Spring Boot",
+            category = "Programming Course"
+        )
+        val savedCourse = courseRepository.save(course)
+
+        //COURSE ID
+        //Updated CourseDTO
+        val newCourseDTO = CourseDTO(
+            id = null,
+            name = "Java Spring Boot - Updated",
+            category = "Programming Course - Updated"
+        )
+
+        val updatedCourse = webTestClient.put()
+            .uri("/v1/courses/{course_id}", savedCourse.id)
+            .bodyValue(newCourseDTO)
+            .exchange()
+            .expectStatus().isOk
+            .expectBody(CourseDTO::class.java)
+            .returnResult()
+            .responseBody
+
+        Assertions.assertEquals(newCourseDTO.name , updatedCourse!!.name)
+    }
+
+    @Test
+    fun deleteCourse() {
+        //existing course
+        val course = Course(
+            id = null,
+            name = "Java Spring Boot",
+            category = "Programming Course"
+        )
+        val savedCourse = courseRepository.save(course)
+
+        webTestClient.delete()
+            .uri("/v1/courses/{course_id}", savedCourse.id)
+            .exchange()
+            .expectStatus().isNoContent
+
+        Assertions.assertFalse { courseRepository.findById(savedCourse.id!!).isPresent }
     }
 }
