@@ -14,6 +14,7 @@ import org.springframework.test.web.reactive.server.WebTestClient
 import com.kotlinspring.util.courseDTO
 import io.mockk.just
 import io.mockk.runs
+import kotlin.test.assertEquals
 
 
 @WebMvcTest(controllers = [CourseController::class])
@@ -58,11 +59,40 @@ class CourseControllerUnitTest {
 
         every { courseServiceMockk.addCourse(any()) } returns courseDTO(id = 1)
 
-        val savedCourseDTO = webTestClient.post()
+        val response = webTestClient.post()
             .uri("/v1/courses")
             .bodyValue(courseDTO)
             .exchange()
             .expectStatus().isBadRequest
+            .expectBody(String::class.java)
+            .returnResult()
+            .responseBody
+
+        assertEquals("courseDTO.category should not be blank/empty, courseDTO.name should not be empty/blank", response)
+    }
+
+
+    @Test
+    internal fun addCourse_runtimeException() {
+        val courseDTO = CourseDTO(
+            id = null,
+            name = "Build an Kotlon based Spring Boot API",
+            category = "Game"
+        )
+
+        val error = "Unexpected error occurred"
+        every { courseServiceMockk.addCourse(any()) } throws RuntimeException(error)
+
+        val response = webTestClient.post()
+            .uri("/v1/courses")
+            .bodyValue(courseDTO)
+            .exchange()
+            .expectStatus().is5xxServerError
+            .expectBody(String::class.java)
+            .returnResult()
+            .responseBody
+
+        assertEquals(error, response)
     }
 
     @Test
